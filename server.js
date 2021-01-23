@@ -2,7 +2,8 @@
 const inquirer = require ('inquirer');
 const mysql = require('mysql2');
 const cTable = require('console.table');
-const viewDepartments = require('./lib/Department');
+const departmentsArr = ['Marketing', 'Engineering', 'Finance', 'Sales', 'HR'];
+
 
 const connection = mysql.createConnection({
   host: 'localhost',
@@ -72,9 +73,103 @@ const promptUser = function() {
                 connection.end();
             });
         }
-        if (answer.menu === 'view employees by manager') {
-        
+        if (answer.menu === 'add a department') {
+            inquirer.prompt(
+                {
+                    type: 'input',
+                    name: 'department',
+                    message: `What department would you like to add?`,
+                    validate: Input => {
+                        if (Input){
+                            return true;
+                        } else {
+                            console.log(`Please enter a name!`);
+                            return false;
+                        }
+                    }
+                }
+            ).then(answer => {
+                console.log(answer);
+                // pushing added departments into an array so I can use them when a new role is added and I need to present department choices that the role will be added upder 
+                departmentsArr.push(answer.department);
+                console.log(departmentsArr);
+
+                console.log('Inserting a new department...\n');
+               connection.query(
+                    'INSERT INTO department SET ?',
+                    {
+                    name: `${answer.department}`
+                    },
+                    function(err, res) {
+                    if (err) throw err;
+                    console.log(res.affectedRows + ' department inserted!\n');
+                    }
+                );
+                return promptUser();
+            })    
             
+        }
+        if (answer.menu === 'add a role') {
+            inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'title',
+                    message: `What is the title of the role?`,
+                    validate: Input => {
+                        if (Input){
+                            return true;
+                        } else {
+                            console.log(`Please enter title!`);
+                            return false;
+                        }
+                    }
+                },
+                {
+                    type: 'input',
+                    name: 'salary',
+                    message: `What is the salary for this position?`,
+                    validate: Input => {
+                        if (Input){
+                            return true;
+                        } else {
+                            console.log(`Please enter a salary!`);
+                            return false;
+                        }
+                    }
+                },
+                {
+                    type: 'list',
+                    message: 'What department does this role belong to?',
+                    name: 'department',
+                    choices: departmentsArr
+                }
+            ]).then(answer => {
+                console.log(answer);
+                // answer = { title: 'Account Dev Rep', salary: '60000', department: 'Marketing' }
+
+                // loop through the departmentArr and find a match and set that index+1 to the department_id that you will insert into the table 
+                for(var i= 0; i < departmentsArr.length; i++) {
+                    if (answer.department === departmentsArr[i]){
+                        var departmentId = parseInt([i+1])
+                        console.log(departmentId);
+                    }
+                }
+                
+                    console.log('Inserting a new role...\n');
+                    connection.query(
+                        'INSERT INTO role SET ?',
+                        {
+                        title: answer.title,
+                        salary: answer.salary ,
+                        department_id: departmentId 
+                        },
+                        function(err, res) {
+                        if (err) throw err;
+                        console.log(res.affectedRows + ' role inserted!\n');
+                        }
+                    );
+                return promptUser();
+            })    
             
         }
         
