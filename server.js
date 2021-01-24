@@ -424,11 +424,12 @@ const promptUser = function() {
         }
         if (answer.menu === 'update an employee role') {
 
-            connection.query(`SELECT * FROM employee`, function(err, res) {
+            connection.query(`SELECT employee.*, role.title  FROM employee JOIN role ON employee.role_id = role.id`, function(err, res) {
                 
                 //console.log(res)
 
-                const updateEmployeeArr = []
+                const updateEmployeeArr = [];
+                const updateRoleArr = [];
 
                 for (var i= 0; i <res.length; i++) {
                     // found out that inquirer needs the property name to be 'value'
@@ -436,9 +437,13 @@ const promptUser = function() {
                     // in this case I changed :id to :value so inquirer knew to pass back that value in the answer
                     
                     updateEmployeeArr.push({name:`${res[i].first_name} `+ `${res[i].last_name}` +` (employee id: ${res[i].id})`, value: res[i].id})
-                    // replace a property name with value for whatever one it will pass back
+                    
+                    updateRoleArr.push({name: res[i].title, value: res[i].role_id})
                   
                 }
+
+                //console.log(updateEmployeeArr);
+                //console.log(updateRoleArr);
             
 
                 inquirer.prompt(
@@ -451,7 +456,12 @@ const promptUser = function() {
                         
                     },
                     {
-                        /// which role would you like to update?? have to pull in roles set their value to role id???
+                        type: 'list',
+                        name: 'role',
+                        message: `Which role are you giving this employee?`,
+                        // need to get list of choices from database to included added ones
+                        choices: updateRoleArr
+                        
                     }
 
                     ]
