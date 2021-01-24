@@ -422,6 +422,67 @@ const promptUser = function() {
             })   
              
         }
+        if (answer.menu === 'update an employee role') {
+
+            connection.query(`SELECT * FROM employee`, function(err, res) {
+                
+                //console.log(res)
+
+                const updateEmployeeArr = []
+
+                for (var i= 0; i <res.length; i++) {
+                    // found out that inquirer needs the property name to be 'value'
+                    // replace a property name with value for whatever one it will pass back
+                    // in this case I changed :id to :value so inquirer knew to pass back that value in the answer
+                    
+                    updateEmployeeArr.push({name:`${res[i].first_name} `+ `${res[i].last_name}` +` (employee id: ${res[i].id})`, value: res[i].id})
+                    // replace a property name with value for whatever one it will pass back
+                  
+                }
+            
+
+                inquirer.prompt(
+                    [{
+                        type: 'list',
+                        name: 'employee',
+                        message: `Which employee would you like to update?`,
+                        // need to get list of choices from database to included added ones
+                        choices: updateEmployeeArr
+                        
+                    },
+                    {
+                        /// which role would you like to update?? have to pull in roles set their value to role id???
+                    }
+
+                    ]
+                ).then(answer => {
+                    //console.log(answer);
+                     console.log('Updating employee role...\n');
+                        connection.query(
+                                'UPDATE employee SET ? WHERE ?',
+                                [
+                                {
+                                    role_id: answer.role
+                                },
+                                {
+                                    id: answer.employee
+                                }
+                                ],
+                                function(err, res) {
+                                if (err) throw err;
+                                console.log(res.affectedRows + ' employee role updated!\n');
+                                
+                                }
+                        );
+
+                        //return promptUser();    
+                    
+
+                }) 
+                
+            })
+           
+        }
         
     })
 };
