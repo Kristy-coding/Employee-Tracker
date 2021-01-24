@@ -2,7 +2,7 @@
 const inquirer = require ('inquirer');
 const mysql = require('mysql2');
 const cTable = require('console.table');
-const departmentsArr = ['Marketing', 'Engineering', 'Finance', 'Sales', 'HR'];
+
 
 
 const connection = mysql.createConnection({
@@ -30,7 +30,7 @@ const promptUser = function() {
         type: 'list',
         message: 'What would you like to do?',
         name: 'menu',
-        choices: ['view all departments', 'view all roles', 'view all employees', 'view employees by manager', 'view employees by department','view total utilized budget of a department', 'add a department', 'add a role', 'add an employee', 'update an employee role','update employee manager', 'delete department', 'delete role', 'delete employee']
+        choices: ['view all departments', 'view all roles', 'view all employees', 'view employees by manager', 'view employees by department','view total utilized budget of a department', 'add a department', 'add a role', 'add an employee', 'update an employee role','update employee manager', 'delete department', 'delete role', 'delete employee','exit application']
     })
     .then(answer => {
         // user feedback comes from name 
@@ -72,6 +72,7 @@ const promptUser = function() {
                 console.table(res);
                 connection.end();
             });
+            return promptUser();
         }
         if (answer.menu === 'add a department') {
             inquirer.prompt(
@@ -91,8 +92,7 @@ const promptUser = function() {
             ).then(answer => {
                 console.log(answer);
                 // pushing added departments into an array so I can use them when a new role is added and I need to present department choices that the role will be added upder 
-                departmentsArr.push(answer.department);
-                console.log(departmentsArr);
+                // 
 
                 console.log('Inserting a new department...\n');
                connection.query(
@@ -110,84 +110,178 @@ const promptUser = function() {
             
         }
         if (answer.menu === 'add a role') {
+
+            // query to pull department list 
+            connection.query(`SELECT * FROM department`, function(err, res) {
+                if (err) throw err;
+                // Log all results of the SELECT statement
+                console.log(res);
+                console.log(res[1].id);
+                console.log(res[1].name);
+
+                const departmentNameArr = []
+               
+                for (var i= 0; i <res.length; i++) {
+                    // found out that inquirer needs the property name to be 'value'
+                    // replace a property name with value for whatever one it will pass back
+                    // in this case I changed :id to :value so inquirer knew to pass back that value in the answer
+                    departmentNameArr.push({name: res[i].name, value: res[i].id})
+                    // replace a property name with value for whatever one it will pass back
+                  
+                }
+
+                console.log(departmentNameArr);
+               
+                // res.map(pull the id and name from text rown and create a new object )
+                //connection.end();
+            
+                // put inquirer in call back of database query 
+                inquirer.prompt([
+                    {
+                        type: 'input',
+                        name: 'title',
+                        message: `What is the title of the role?`,
+                        validate: Input => {
+                            if (Input){
+                                return true;
+                            } else {
+                                console.log(`Please enter title!`);
+                                return false;
+                            }
+                        }
+                    },
+                    {
+                        type: 'input',
+                        name: 'salary',
+                        message: `What is the salary for this position?`,
+                        validate: Input => {
+                            if (Input){
+                                return true;
+                            } else {
+                                console.log(`Please enter a salary!`);
+                                return false;
+                            }
+                        }
+                    },
+                    {
+                        type: 'list',
+                        message: 'What department does this role belong to?',
+                        name: 'department',
+                        choices: departmentNameArr
+                    }
+                
+                ]).then(answer => {
+                    console.log(answer);
+                        console.log('Inserting a new role...\n');
+                        connection.query(
+                            'INSERT INTO role SET ?',
+                            {
+                            title: answer.title,
+                            salary: answer.salary ,
+                            department_id: answer.department
+                            },
+                            function(err, res) {
+                            if (err) throw err;
+                            console.log(res.affectedRows + ' role inserted!\n');
+                            }
+                        );
+                    return promptUser();
+                })    
+            });
+         }
+        if (answer.menu === 'add an employee'){
             inquirer.prompt([
                 {
                     type: 'input',
-                    name: 'title',
-                    message: `What is the title of the role?`,
+                    name: 'first',
+                    message: `What is the employee's first name?`,
                     validate: Input => {
                         if (Input){
                             return true;
                         } else {
-                            console.log(`Please enter title!`);
+                            console.log(`Please enter first name!`);
                             return false;
                         }
                     }
                 },
                 {
                     type: 'input',
-                    name: 'salary',
-                    message: `What is the salary for this position?`,
+                    name: 'last',
+                    message: `What is the employee's last name?`,
                     validate: Input => {
                         if (Input){
                             return true;
                         } else {
-                            console.log(`Please enter a salary!`);
+                            console.log(`Please enter last name!`);
                             return false;
                         }
                     }
-                },
-                {
-                    type: 'list',
-                    message: 'What department does this role belong to?',
-                    name: 'department',
-                    choices: departmentsArr
-                }
+                }//,
+                // {
+                //     type: 'list',
+                //     message: `What is the employee's role?`,
+                //     name: 'role',
+                //     // want to make choices give a list of role.titles from database ?????????????then I need to convert that to the id associated ???????????????????????????????????????????????????
+                //     choices: 
+                // },
+                //{
+                //     type: 'List',
+                //     message: `Who is the employee's manager?`,
+                //     name: 'manager',
+                //     choises: // make sure choices include ' no manager'
+            
+                // }
             ]).then(answer => {
                 console.log(answer);
-                // answer = { title: 'Account Dev Rep', salary: '60000', department: 'Marketing' }
-
-                // loop through the departmentArr and find a match and set that index+1 to the department_id that you will insert into the table 
-                for(var i= 0; i < departmentsArr.length; i++) {
-                    if (answer.department === departmentsArr[i]){
-                        var departmentId = parseInt([i+1])
-                        console.log(departmentId);
-                    }
-                }
-                
-                    console.log('Inserting a new role...\n');
+            
+                    console.log('Inserting a new employee...\n');
                     connection.query(
-                        'INSERT INTO role SET ?',
+                        'INSERT INTO employee SET ?',
                         {
-                        title: answer.title,
-                        salary: answer.salary ,
-                        department_id: departmentId 
+                        first_name: answer.first,
+                        last_name: answer.last ,
+                        //role_id: answer.role,
+                        //manager_id: answer.manager 
                         },
                         function(err, res) {
                         if (err) throw err;
-                        console.log(res.affectedRows + ' role inserted!\n');
+                        console.log(res.affectedRows + ' employee inserted!\n');
                         }
                     );
                 return promptUser();
-            })    
-            
+            })
         }
-        
+        if (answer.menu === 'delete department'){
+            inquirer.prompt(
+                {
+                    type: 'list',
+                    name: 'department',
+                    message: `What department would you like to delete?`,
+                    // need to get list of choices from database to included added ones
+                    choices: ['Marketing', 'Engineering','Finance','Sales','HR']
+                    
+                }
+            ).then(answer => {
+                console.log(answer);
+                console.log('Deleting department...\n');
+                const query = connection.query(
+                    'DELETE FROM department WHERE ?',
+                    {
+                    name: answer.department
+                    },
+                    function(err, res) {
+                    if (err) throw err;
+                    console.log(res.affectedRows + ' department deleted!\n');
+                    }
+                );
+
+            }) 
+            return promptUser();
+        }
     })
-}
+};
  
 
+// view employee by manager 
+//SELECT employee.first_name, employee.last_name FROM employee  WHERE manager_id =1;
 
-
-// connection.query(
-//     `INSERT INTO department (name) 
-//     VALUES (?)`,
-//     answers.department,
-
-//     function(err, results, fields) {
-//     console.log(results); // results contains rows 
-//     //returned by server
-//     console.log(fields); // fields contains extra meta data about results, if available
-    
-//     }
-// );
