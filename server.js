@@ -482,10 +482,10 @@ const promptUser = function() {
                                 if (err) throw err;
                                 console.log(res.affectedRows + ' employee role updated!\n');
                                 
-                                }
-                        );
+                                return promptUser();
 
-                        //return promptUser();    
+                                }
+                        );   
                     
 
                 }) 
