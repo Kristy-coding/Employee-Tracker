@@ -30,20 +30,26 @@ const promptUser = function() {
         type: 'list',
         message: 'What would you like to do?',
         name: 'menu',
-        choices: ['view all departments', 'view all roles', 'view all employees', 'view employees by manager', 'view employees by department','view total utilized budget of a department', 'add a department', 'add a role', 'add an employee', 'update an employee role','update employee manager', 'delete department', 'delete role', 'delete employee','exit application']
+        choices: ['view all departments', 'view all roles', 'view all employees', 'view employees by manager', 'view employees by department','view total utilized budget of a department', 'add a department', 'add a role', 'add an employee', 'update an employee role','update employee manager', 'delete department', 'delete role', 'delete employee','EXIT APPLICATION']
     })
     .then(answer => {
         // user feedback comes from name 
         // Use user feedback for... whatever!!
-        console.log(answer)
+        //console.log(answer)
+        if (answer.menu === 'EXIT APPLICATION'){
+            connection.end()
+            return
+        }
         if (answer.menu === 'view all departments') {
 
-            connection.query(`SELECT * FROM department`, function(err, res) {
+            connection.query(`SELECT department.name AS Department FROM department`, function(err, res) {
                 if (err) throw err;
                 // Log all results of the SELECT statement
                 console.table(res);
-                connection.end();
+                //connection.end();
+                return promptUser();
             });
+            
         }
         if (answer.menu === 'view all roles') {
             //WHEN I choose to view all roles
@@ -55,7 +61,8 @@ const promptUser = function() {
                 if (err) throw err;
                 // Log all results of the SELECT statement
                 console.table(res);
-                connection.end();
+                //connection.end();
+                return promptUser();
             });
         }
         if (answer.menu === 'view all employees') {
@@ -70,9 +77,10 @@ const promptUser = function() {
                 if (err) throw err;
                 // Log all results of the SELECT statement
                 console.table(res);
-                connection.end();
+                //connection.end();
+                return promptUser();
             });
-            return promptUser();
+            
         }
         if (answer.menu === 'add a department') {
             inquirer.prompt(
@@ -91,9 +99,7 @@ const promptUser = function() {
                 }
             ).then(answer => {
                 console.log(answer);
-                // pushing added departments into an array so I can use them when a new role is added and I need to present department choices that the role will be added upder 
-                // 
-
+                 
                 console.log('Inserting a new department...\n');
                connection.query(
                     'INSERT INTO department SET ?',
@@ -103,21 +109,22 @@ const promptUser = function() {
                     function(err, res) {
                     if (err) throw err;
                     console.log(res.affectedRows + ' department inserted!\n');
-                    }
-                );
-                return promptUser();
+                    return promptUser(); 
+                });
+                
             })    
             
         }
         if (answer.menu === 'add a role') {
 
-            // query to pull department list 
+            // query to pull department list
+            // in quirer prompts/ logic will then be in the call back of the query 
             connection.query(`SELECT * FROM department`, function(err, res) {
                 if (err) throw err;
                 // Log all results of the SELECT statement
-                console.log(res);
-                console.log(res[1].id);
-                console.log(res[1].name);
+                // console.log(res);
+                // console.log(res[1].id);
+                // console.log(res[1].name);
 
                 const departmentNameArr = []
                
@@ -130,12 +137,9 @@ const promptUser = function() {
                   
                 }
 
-                console.log(departmentNameArr);
-               
-                // res.map(pull the id and name from text rown and create a new object )
-                //connection.end();
-            
-                // put inquirer in call back of database query 
+                //console.log(departmentNameArr);
+                // NO NOT END THE CONNECTION UNTIL AFTER INFO IS ADDED ***************************************** do not do connection.end here!
+                // NEED TO PUT INQUIRER PROMTS AND LOGIC IN THE CALL BACK FUNCTION OF QUERY*********************** 
                 inquirer.prompt([
                     {
                         type: 'input',
@@ -171,7 +175,7 @@ const promptUser = function() {
                     }
                 
                 ]).then(answer => {
-                    console.log(answer);
+                        console.log(answer);
                         console.log('Inserting a new role...\n');
                         connection.query(
                             'INSERT INTO role SET ?',
@@ -183,101 +187,242 @@ const promptUser = function() {
                             function(err, res) {
                             if (err) throw err;
                             console.log(res.affectedRows + ' role inserted!\n');
-                            }
-                        );
-                    return promptUser();
+                           
+                            return promptUser();
+                        });
+                    
                 })    
             });
          }
         if (answer.menu === 'add an employee'){
-            inquirer.prompt([
-                {
-                    type: 'input',
-                    name: 'first',
-                    message: `What is the employee's first name?`,
-                    validate: Input => {
-                        if (Input){
-                            return true;
-                        } else {
-                            console.log(`Please enter first name!`);
-                            return false;
+
+            connection.query(`SELECT * FROM role`, function(err, res) {
+                if (err) throw err;
+                // Log all results of the SELECT statement
+                // console.log(res);
+                // console.log(res[1].title)
+                // console.log(res[1].id)
+                const roleArr = []
+               
+                for (var i= 0; i <res.length; i++) {
+                    // found out that inquirer needs the property name to be 'value'
+                    // replace a property name with value for whatever one it will pass back
+                    // in this case I changed :id to :value so inquirer knew to pass back that value in the answer
+                    roleArr.push({name: res[i].title, value: res[i].id})
+                    // replace a property name with value for whatever one it will pass back
+                  
+                }
+
+                 //console.log(roleArr);
+                
+           
+                inquirer.prompt([
+                    {
+                        type: 'input',
+                        name: 'first',
+                        message: `What is the employee's first name?`,
+                        validate: Input => {
+                            if (Input){
+                                return true;
+                            } else {
+                                console.log(`Please enter first name!`);
+                                return false;
+                            }
                         }
-                    }
-                },
-                {
-                    type: 'input',
-                    name: 'last',
-                    message: `What is the employee's last name?`,
-                    validate: Input => {
-                        if (Input){
-                            return true;
-                        } else {
-                            console.log(`Please enter last name!`);
-                            return false;
+                    },
+                    {
+                        type: 'input',
+                        name: 'last',
+                        message: `What is the employee's last name?`,
+                        validate: Input => {
+                            if (Input){
+                                return true;
+                            } else {
+                                console.log(`Please enter last name!`);
+                                return false;
+                            }
                         }
-                    }
-                }//,
-                // {
-                //     type: 'list',
-                //     message: `What is the employee's role?`,
-                //     name: 'role',
-                //     // want to make choices give a list of role.titles from database ?????????????then I need to convert that to the id associated ???????????????????????????????????????????????????
-                //     choices: 
-                // },
-                //{
-                //     type: 'List',
-                //     message: `Who is the employee's manager?`,
-                //     name: 'manager',
-                //     choises: // make sure choices include ' no manager'
-            
-                // }
-            ]).then(answer => {
-                console.log(answer);
-            
-                    console.log('Inserting a new employee...\n');
-                    connection.query(
-                        'INSERT INTO employee SET ?',
-                        {
-                        first_name: answer.first,
-                        last_name: answer.last ,
-                        //role_id: answer.role,
-                        //manager_id: answer.manager 
-                        },
-                        function(err, res) {
-                        if (err) throw err;
-                        console.log(res.affectedRows + ' employee inserted!\n');
-                        }
-                    );
-                return promptUser();
+                    },
+                    {
+                        type: 'list',
+                        message: `What is the employee's role?`,
+                        name: 'role',
+                        choices: roleArr
+                    }//,
+                    //{
+                    //     type: 'List',
+                    //     message: `Who is the employee's manager?`,
+                    //     name: 'manager',
+                    //     choises: // make sure choices include ' no manager'
+                
+                    // }
+                ]).then(answer => {
+                    console.log(answer);
+                
+                        console.log('Inserting a new employee...\n');
+                        connection.query(
+                            'INSERT INTO employee SET ?',
+                            {
+                            first_name: answer.first,
+                            last_name: answer.last ,
+                            role_id: answer.role,
+                            //manager_id: answer.manager 
+                            },
+                            function(err, res) {
+                            if (err) throw err;
+                            console.log(res.affectedRows + ' employee inserted!\n');
+
+                            return promptUser();
+
+                            }
+                        );
+                    
+                })
             })
         }
         if (answer.menu === 'delete department'){
-            inquirer.prompt(
-                {
-                    type: 'list',
-                    name: 'department',
-                    message: `What department would you like to delete?`,
-                    // need to get list of choices from database to included added ones
-                    choices: ['Marketing', 'Engineering','Finance','Sales','HR']
-                    
-                }
-            ).then(answer => {
-                console.log(answer);
-                console.log('Deleting department...\n');
-                const query = connection.query(
-                    'DELETE FROM department WHERE ?',
-                    {
-                    name: answer.department
-                    },
-                    function(err, res) {
-                    if (err) throw err;
-                    console.log(res.affectedRows + ' department deleted!\n');
-                    }
-                );
 
-            }) 
-            return promptUser();
+            connection.query(`SELECT * FROM department`, function(err, res) {
+                
+                console.log(res)
+
+                const deleteDepArr = []
+
+                for (var i= 0; i <res.length; i++) {
+                    // found out that inquirer needs the property name to be 'value'
+                    // replace a property name with value for whatever one it will pass back
+                    // in this case I changed :id to :value so inquirer knew to pass back that value in the answer
+                    deleteDepArr.push(res[i].name)
+                    // replace a property name with value for whatever one it will pass back
+                  
+                }
+            
+
+                inquirer.prompt(
+                    {
+                        type: 'list',
+                        name: 'department',
+                        message: `What department would you like to delete?`,
+                        // need to get list of choices from database to included added ones
+                        choices: deleteDepArr
+                        
+                    }
+                ).then(answer => {
+                    //console.log(answer);
+                    console.log('Deleting department...\n');
+                    const query = connection.query(
+                        'DELETE FROM department WHERE ?',
+                        {
+                        name: answer.department
+                        },
+                        function(err, res) {
+                        if (err) throw err;
+                        console.log(res.affectedRows + ' department deleted!\n');
+
+                        return promptUser();    
+                    });
+
+                }) 
+                
+            })   
+             
         }
+        if (answer.menu === 'delete role'){
+
+            connection.query(`SELECT * FROM role`, function(err, res) {
+                
+                //console.log(res)
+
+                const deleteRoleArr = []
+
+                for (var i= 0; i <res.length; i++) {
+                    // found out that inquirer needs the property name to be 'value'
+                    // replace a property name with value for whatever one it will pass back
+                    // in this case I changed :id to :value so inquirer knew to pass back that value in the answer
+                    deleteRoleArr.push(res[i].title)
+                    // replace a property name with value for whatever one it will pass back
+                  
+                }
+            
+
+                inquirer.prompt(
+                    {
+                        type: 'list',
+                        name: 'role',
+                        message: `What role would you like to delete?`,
+                        // need to get list of choices from database to included added ones
+                        choices: deleteRoleArr
+                        
+                    }
+                ).then(answer => {
+                    //console.log(answer);
+                    console.log('Deleting role...\n');
+                    const query = connection.query(
+                        'DELETE FROM role WHERE ?',
+                        {
+                        title: answer.role
+                        },
+                        function(err, res) {
+                        if (err) throw err;
+                        console.log(res.affectedRows + ' role deleted!\n');
+
+                        return promptUser();    
+                    });
+
+                }) 
+                
+            })   
+             
+        }
+        if (answer.menu === 'delete employee'){
+
+            connection.query(`SELECT * FROM employee`, function(err, res) {
+                
+                //console.log(res)
+
+                const deleteEmployeeArr = []
+
+                for (var i= 0; i <res.length; i++) {
+                    // found out that inquirer needs the property name to be 'value'
+                    // replace a property name with value for whatever one it will pass back
+                    // in this case I changed :id to :value so inquirer knew to pass back that value in the answer
+                    
+                    deleteEmployeeArr.push({name:`${res[i].first_name} `+ `${res[i].last_name}` +` (employee id: ${res[i].id})`, value: res[i].id})
+                    // replace a property name with value for whatever one it will pass back
+                  
+                }
+            
+
+                inquirer.prompt(
+                    {
+                        type: 'list',
+                        name: 'employee',
+                        message: `Which employee would you like to delete?`,
+                        // need to get list of choices from database to included added ones
+                        choices: deleteEmployeeArr
+                        
+                    }
+                ).then(answer => {
+                    //console.log(answer);
+                    console.log('Deleting employee...\n');
+                    const query = connection.query(
+                        'DELETE FROM employee WHERE ?',
+                        {
+                        id: answer.employee
+                        },
+                        function(err, res) {
+                        if (err) throw err;
+                        console.log(res.affectedRows + ' employee deleted!\n');
+
+                        return promptUser();    
+                    });
+
+                }) 
+                
+            })   
+             
+        }
+        
     })
 };
  
