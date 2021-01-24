@@ -284,7 +284,7 @@ const promptUser = function() {
 
             connection.query(`SELECT * FROM department`, function(err, res) {
                 
-                console.log(res)
+                //console.log(res)
 
                 const deleteDepArr = []
 
